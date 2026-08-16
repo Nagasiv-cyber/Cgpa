@@ -368,45 +368,57 @@ async def get_subject_statistics(subject_code: str):
 async def get_semester_subject_analysis(semester: str):
     db = get_database()
     
+    # Pre-populate with subjects explicitly defined for this semester
     subjects_cursor = db.subjects.find({"semester": semester})
-    subjects_list = []
+    stats_map = {}
     async for sub in subjects_cursor:
-        subjects_list.append(sub)
+        stats_map[sub["code"]] = {
+            "total_appeared": 0,
+            "passed": 0,
+            "failed": 0,
+            "grade_distribution": {"O": 0, "A+": 0, "A": 0, "B+": 0, "B": 0, "C": 0, "U": 0},
+            "arrear_students": []
+        }
         
+    # Aggregate over all results for the semester
+    cursor = db.results.find({"semester": semester})
+    async for doc in cursor:
+        grades = doc.get("grades", {})
+        reg_no = doc["register_no"]
+        for code, g in grades.items():
+            if code not in stats_map:
+                stats_map[code] = {
+                    "total_appeared": 0,
+                    "passed": 0,
+                    "failed": 0,
+                    "grade_distribution": {"O": 0, "A+": 0, "A": 0, "B+": 0, "B": 0, "C": 0, "U": 0},
+                    "arrear_students": []
+                }
+            
+            stats_map[code]["total_appeared"] += 1
+            if g in stats_map[code]["grade_distribution"]:
+                stats_map[code]["grade_distribution"][g] += 1
+            
+            if g == "U":
+                stats_map[code]["failed"] += 1
+                stats_map[code]["arrear_students"].append(reg_no)
+            else:
+                stats_map[code]["passed"] += 1
+
     analysis = []
-    for sub in subjects_list:
-        code = sub["code"]
-        cursor = db.results.find({"semester": semester})
-        
-        total_appeared = 0
-        passed = 0
-        failed = 0
-        grade_distribution = {"O": 0, "A+": 0, "A": 0, "B+": 0, "B": 0, "C": 0, "U": 0}
-        arrear_students = []
-        
-        async for doc in cursor:
-            grades = doc.get("grades", {})
-            if code in grades:
-                total_appeared += 1
-                g = grades[code]
-                if g in grade_distribution:
-                    grade_distribution[g] += 1
-                if g == "U":
-                    failed += 1
-                    arrear_students.append(doc["register_no"])
-                else:
-                    passed += 1
-                    
-        pass_pct = round((passed / total_appeared * 100), 2) if total_appeared > 0 else 0.0
+    for code, data in stats_map.items():
+        total = data["total_appeared"]
+        pass_pct = round((data["passed"] / total * 100), 2) if total > 0 else 0.0
         analysis.append(SubjectStatsResponse(
             subject_code=code,
-            total_appeared=total_appeared,
-            passed=passed,
-            failed=failed,
+            total_appeared=total,
+            passed=data["passed"],
+            failed=data["failed"],
             pass_percentage=pass_pct,
-            grade_distribution=grade_distribution,
-            arrear_students=arrear_students
+            grade_distribution=data["grade_distribution"],
+            arrear_students=data["arrear_students"]
         ))
+        
     return analysis
 
 @router.get("/semester/{semester}/grade-distribution", response_model=Dict[str, int])

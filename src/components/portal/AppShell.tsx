@@ -2,7 +2,6 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, LayoutDashboard, LogOut, PenLine, Trophy, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Backdrop } from "./Backdrop";
-import mark from "@/assets/rec-mark.png.asset.json";
 import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-4 px-5 py-3">
           <Link to="/dashboard" className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-content-center overflow-hidden rounded-xl bg-background ring-1 ring-border">
-              <img src={mark.url} alt="Rajalakshmi Engineering College logo" className="h-full w-full object-cover" />
+              <img src="/new-logo.png" alt="Portal logo" className="h-full w-full object-cover" />
             </span>
             <span className="leading-tight">
               <span className="block font-display text-sm font-bold">Rajalakshmi Engineering College</span>
