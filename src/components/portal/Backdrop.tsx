@@ -1,4 +1,3 @@
-import mark from "@/assets/rec-mark.png.asset.json";
 
 export function Backdrop() {
   return (
@@ -7,7 +6,7 @@ export function Backdrop() {
 
       {/* college mark watermark */}
       <img
-        src={mark.url}
+        src="/new-logo.png"
         alt=""
         className="absolute left-1/2 top-1/2 w-[620px] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 opacity-[0.06] mix-blend-screen blur-[1px]"
       />

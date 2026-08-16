@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react";
-import mark from "@/assets/rec-mark.png.asset.json";
 import wordmark from "@/assets/rec-logo.png.asset.json";
 import aiConnection from "@/assets/ai-connection.png.asset.json";
 
@@ -49,7 +48,7 @@ function LoginPage() {
         <div className="glass animate-rise mx-auto w-full max-w-[420px] rounded-3xl p-8">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-content-center overflow-hidden rounded-2xl bg-background ring-1 ring-border">
-              <img src={mark.url} alt="Rajalakshmi Engineering College logo" className="h-full w-full object-cover" />
+              <img src="/new-logo.png" alt="Portal logo" className="h-full w-full object-cover" />
             </span>
             <div className="leading-tight">
               <div className="font-display text-base font-bold">Rajalakshmi Engineering College</div>
