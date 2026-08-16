@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000/api";
 
 async function fetcher(endpoint: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -44,10 +44,10 @@ export function useSubjects() {
   });
 }
 
-export function useLeaderboard(limit: number = 100) {
+export function useLeaderboard(limit: number = 100, semester?: string) {
   return useQuery({
-    queryKey: ["leaderboard", limit],
-    queryFn: () => fetcher(`/results/leaderboard?limit=${limit}`),
+    queryKey: ["leaderboard", limit, semester],
+    queryFn: () => fetcher(`/results/leaderboard?limit=${limit}${semester ? `&semester=${semester}` : ""}`),
   });
 }
 
@@ -126,6 +126,10 @@ export function useSubmitGrades() {
       queryClient.invalidateQueries({ queryKey: ["toppers"] });
       queryClient.invalidateQueries({ queryKey: ["student-results"] });
       queryClient.invalidateQueries({ queryKey: ["subject-analysis"] });
+      queryClient.invalidateQueries({ queryKey: ["grade-distribution"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student"] });
+      queryClient.invalidateQueries({ queryKey: ["section-results"] });
     },
   });
 }
@@ -143,6 +147,10 @@ export function useBulkUpload() {
       queryClient.invalidateQueries({ queryKey: ["toppers"] });
       queryClient.invalidateQueries({ queryKey: ["student-results"] });
       queryClient.invalidateQueries({ queryKey: ["subject-analysis"] });
+      queryClient.invalidateQueries({ queryKey: ["grade-distribution"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student"] });
+      queryClient.invalidateQueries({ queryKey: ["section-results"] });
     },
   });
 }

@@ -64,6 +64,9 @@ class MockCollection:
             if k == "_id":
                 if str(doc.get("_id")) != str(v) and doc.get("_id") != v:
                     return False
+            elif isinstance(v, dict) and "$ne" in v:
+                if doc.get(k) == v["$ne"]:
+                    return False
             elif doc.get(k) != v:
                 return False
         return True

@@ -47,7 +47,7 @@ function Analysis() {
   const [subjectCode, setSubjectCode] = useState<string | null>(null);
 
   const { data: analysisData, isLoading: isAnalLoading } = useSubjectAnalysis(semester);
-  const { data: leaderboardData, isLoading: isLdbLoading } = useLeaderboard(1000);
+  const { data: leaderboardData, isLoading: isLdbLoading } = useLeaderboard(1000, semester);
 
   const isLoading = isAnalLoading || isLdbLoading;
   const codes = (analysisData || []).map((a: any) => a.subject_code);
@@ -104,8 +104,8 @@ function Analysis() {
 }
 
 function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; leaderboardData: any[] }) {
-  const all = leaderboardData || [];
-  const cleared = all.filter((s: any) => s.arrears.length === 0);
+  const all = (leaderboardData || []).filter((s: any) => s && typeof s.sgpa === "number");
+  const cleared = all.filter((s: any) => Array.isArray(s.arrears) && s.arrears.length === 0);
   const appeared = all.length;
   const failed = appeared - cleared.length;
   const passPct = appeared > 0 ? (cleared.length / appeared) * 100 : 0;
@@ -117,19 +117,26 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
     passPct,
   };
 
-  const toppers = all.slice(0, 3).map((s: any) => ({ name: s.student_name, gpa: +s.sgpa.toFixed(2) }));
+  const toppers = all
+    .slice(0, 3)
+    .map((s: any) => ({ name: s.student_name ?? s.name ?? "Unknown", gpa: +Number(s.sgpa).toFixed(2) }))
+    .filter((t: any) => t.gpa > 0);
   const podiumColors = ["var(--warning)", "var(--accent-cyan)", "var(--accent-pink)"];
 
   const buckets = [1, 2, 3].map((n) => ({
     label: n === 3 ? "3+ arrears" : `${n} arrear${n > 1 ? "s" : ""}`,
-    count: all.filter((s: any) => (n === 3 ? s.arrears.length >= 3 : s.arrears.length === n)).length,
+    count: all.filter((s: any) => {
+      if (!Array.isArray(s.arrears)) return false;
+      return n === 3 ? s.arrears.length >= 3 : s.arrears.length === n;
+    }).length,
   }));
 
   const perSubject = (analysisData || []).map((sub: any) => {
+    const pass = typeof sub.pass_percentage === "number" ? sub.pass_percentage : 0;
     return {
       code: sub.subject_code,
-      pass: +sub.pass_percentage.toFixed(1),
-      fail: +(100 - sub.pass_percentage).toFixed(1),
+      pass: +pass.toFixed(1),
+      fail: +(100 - pass).toFixed(1),
     };
   });
 
@@ -137,24 +144,30 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel>
         <PanelTitle>Topper Spotlight</PanelTitle>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={toppers} layout="vertical" margin={{ left: 20, right: 40 }}>
-            <XAxis type="number" domain={[0, 10]} stroke="var(--muted-foreground)" fontSize={11} />
-            <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} width={90} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
-            <Bar dataKey="gpa" radius={[0, 8, 8, 0]}>
-              {toppers.map((_, i) => (
-                <Cell key={i} fill={podiumColors[i]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {toppers.length === 0 ? (
+          <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
+            No results recorded yet for this semester.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={toppers} layout="vertical" margin={{ left: 20, right: 40 }}>
+              <XAxis type="number" domain={[0, 10]} stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} width={90} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
+              <Bar dataKey="gpa" radius={[0, 8, 8, 0]}>
+                {toppers.map((_: any, i: number) => (
+                  <Cell key={i} fill={podiumColors[i]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </Panel>
 
       <Panel>
         <PanelTitle>Overall Pass / Fail</PanelTitle>
         <div className="flex flex-wrap items-center gap-8">
-          <Donut pct={stats.passPct} />
+          <Donut pct={isFinite(stats.passPct) ? stats.passPct : 0} />
           <table className="text-sm">
             <tbody className="[&_td]:py-1.5 [&_td:first-child]:pr-8 [&_td:first-child]:text-muted-foreground">
               <tr>
@@ -171,7 +184,7 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
               </tr>
               <tr>
                 <td>Pass %</td>
-                <td className="font-mono">{stats.passPct.toFixed(2)}%</td>
+                <td className="font-mono">{isFinite(stats.passPct) ? stats.passPct.toFixed(2) : "0.00"}%</td>
               </tr>
             </tbody>
           </table>
@@ -193,16 +206,22 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
 
       <Panel>
         <PanelTitle>Per-subject Pass %</PanelTitle>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={perSubject}>
-            <CartesianGrid stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="code" stroke="var(--muted-foreground)" fontSize={10} />
-            <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
-            <Bar dataKey="pass" stackId="a" fill="var(--success)" />
-            <Bar dataKey="fail" stackId="a" fill="var(--danger)" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {perSubject.length === 0 ? (
+          <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">
+            No subject data available for this semester.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={perSubject}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="code" stroke="var(--muted-foreground)" fontSize={10} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
+              <Bar dataKey="pass" stackId="a" fill="var(--success)" />
+              <Bar dataKey="fail" stackId="a" fill="var(--danger)" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </Panel>
     </div>
   );

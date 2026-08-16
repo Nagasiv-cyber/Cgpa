@@ -1,6 +1,6 @@
 # pyrefly: ignore [missing-import]
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 try:
     from backend.database import get_database
@@ -274,9 +274,15 @@ async def get_section_results(section: str):
     return results
 
 @router.get("/leaderboard", response_model=List[StudentResultResponse])
-async def get_leaderboard(limit: int = Query(10, ge=1, le=100)):
+async def get_leaderboard(
+    limit: int = Query(10, ge=1, le=1000),
+    semester: Optional[str] = Query(None)
+):
     db = get_database()
-    cursor = db.results.find().sort("sgpa", -1).limit(limit)
+    query: Dict[str, Any] = {"grades": {"$ne": {}}}
+    if semester:
+        query["semester"] = semester
+    cursor = db.results.find(query).sort("sgpa", -1).limit(limit)
     leaderboard = []
     rank = 1
     async for doc in cursor:

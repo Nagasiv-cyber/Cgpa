@@ -29,7 +29,7 @@ function Leaderboard() {
   const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
   
   // We use the leaderboard hook instead of hardcoded data
-  const { data: rawLeaderboard, isLoading, error } = useLeaderboard(10);
+  const { data: rawLeaderboard, isLoading, error } = useLeaderboard(10, semester);
   
   // Map backend StudentResultResponse to expected frontend properties
   const top = (rawLeaderboard || []).map((s: any) => ({
@@ -41,7 +41,8 @@ function Leaderboard() {
     section: s.section,
   }));
 
-  const podium = top.length >= 3 ? [top[1], top[0], top[2]] : [];
+  const podium = top.length >= 3 ? [top[1], top[0], top[2]] : top.length > 0 ? top : [];
+
 
   return (
     <AppShell>
@@ -70,8 +71,13 @@ function Leaderboard() {
         <>
           <Panel>
             <PanelTitle hint={semester}>Podium</PanelTitle>
-            <div className="grid grid-cols-3 items-end gap-4">
-              {podium.map((s, i) => {
+            {top.length === 0 ? (
+              <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-secondary/20">
+                <span className="font-mono text-xl text-muted-foreground">TBD</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 items-end gap-4">
+              {podium.map((s: any, i: number) => {
                 const style = PODIUM[i === 1 ? 0 : i === 0 ? 1 : 2]!;
                 if (!s) return <div key={i} />;
                 return (
@@ -93,6 +99,7 @@ function Leaderboard() {
                 );
               })}
             </div>
+            )}
           </Panel>
 
           {top.length > 3 && (

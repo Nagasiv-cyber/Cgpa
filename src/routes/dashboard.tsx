@@ -3,8 +3,8 @@ import { useState } from "react";
 import { BarChart3, Crown, Medal, PenLine, Trophy, Loader2, UserPlus } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Donut, Panel, PanelTitle, StatCard } from "@/components/portal/ui";
-import { SECTIONS, sectionStudents } from "@/lib/portal-data";
-import { useLeaderboard } from "@/hooks/useApi";
+import { SECTIONS, SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
+import { useLeaderboard, useStudents } from "@/hooks/useApi";
 import { AddStudentModal } from "@/components/portal/AddStudentModal";
 
 export const Route = createFileRoute("/dashboard")({
@@ -22,11 +22,12 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
-  const { data: rawLeaderboard, isLoading, error } = useLeaderboard(1000); // fetch all for stats
+  const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
+  const { data: rawLeaderboard, isLoading, error } = useLeaderboard(1000, semester); // fetch all for stats
   const [showAddStudent, setShowAddStudent] = useState(false);
   
   const all = rawLeaderboard || [];
-  const cleared = all.filter((s: any) => s.arrears.length === 0);
+  const cleared = all.filter((s: any) => (s.arrears || []).length === 0);
   const appeared = all.length;
   const failed = appeared - cleared.length;
   const passPct = appeared > 0 ? (cleared.length / appeared) * 100 : 0;
@@ -46,7 +47,19 @@ function Dashboard() {
       {showAddStudent && (
         <AddStudentModal onClose={() => setShowAddStudent(false)} />
       )}
-      <PageHeading title="Semester Command Center" subtitle="II Semester" />
+      <PageHeading title="Semester Command Center" subtitle={SEMESTER_LABELS[semester] ?? "Semester"} />
+      <div className="mb-4">
+        <select
+          value={semester}
+          onChange={(e) => setSemester(e.target.value)}
+          aria-label="Semester"
+          className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
+        >
+          {SEMESTERS.map((s) => (
+            <option key={s} value={s}>{SEMESTER_LABELS[s] ?? s}</option>
+          ))}
+        </select>
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center p-12">
@@ -138,23 +151,34 @@ function Dashboard() {
             <PanelTitle hint="Choose a section to view its roster">Sections</PanelTitle>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {SECTIONS.map((sec) => (
-                <Link
-                  key={sec}
-                  to="/section/$section"
-                  params={{ section: sec }}
-                  className="group rounded-2xl border border-border bg-secondary/40 p-6 text-center transition-all hover:-translate-y-1 hover:border-cyan/60 hover:shadow-[var(--glow-strong)]"
-                >
-                  <div className="font-display text-5xl font-bold text-gradient">{sec}</div>
-                  <div className="mt-2 font-mono text-xs text-muted-foreground">
-                    {/* We rely on local state or another API to fetch section lengths, keeping hardcoded length here for structure */}
-                    {sectionStudents(sec).length} students
-                  </div>
-                </Link>
+                <SectionCard key={sec} section={sec} />
               ))}
             </div>
           </Panel>
         </>
       )}
     </AppShell>
+  );
+}
+
+function SectionCard({ section }: { section: string }) {
+  const { data, isLoading } = useStudents(section);
+  const count = Array.isArray(data) ? data.length : 0;
+
+  return (
+    <Link
+      to="/section/$section"
+      params={{ section }}
+      className="group rounded-2xl border border-border bg-secondary/40 p-6 text-center transition-all hover:-translate-y-1 hover:border-cyan/60 hover:shadow-[var(--glow-strong)]"
+    >
+      <div className="font-display text-5xl font-bold text-gradient">{section}</div>
+      <div className="mt-2 font-mono text-xs text-muted-foreground">
+        {isLoading ? (
+          <Loader2 className="mx-auto h-3 w-3 animate-spin" />
+        ) : (
+          `${count} student${count !== 1 ? "s" : ""}`
+        )}
+      </div>
+    </Link>
   );
 }
