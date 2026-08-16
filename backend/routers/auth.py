@@ -57,24 +57,28 @@ async def login_user(login_data: UserLogin):
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    db = get_database()
-    user = await db.users.find_one({"email": login_data.email})
-    
+    user = None
     is_valid = False
-    if user:
-        if "hashed_password" in user:
-            if user["hashed_password"] == login_data.password:
-                is_valid = True
-            else:
+    try:
+        db = get_database()
+        user = await db.users.find_one({"email": login_data.email})
+        
+        if user:
+            if "hashed_password" in user:
+                if user["hashed_password"] == login_data.password:
+                    is_valid = True
+                else:
+                    try:
+                        is_valid = verify_password(login_data.password, user["hashed_password"])
+                    except Exception:
+                        pass
+            elif "password" in user:
                 try:
-                    is_valid = verify_password(login_data.password, user["hashed_password"])
+                    is_valid = verify_password(login_data.password, user["password"])
                 except Exception:
                     pass
-        elif "password" in user:
-            try:
-                is_valid = verify_password(login_data.password, user["password"])
-            except Exception:
-                pass
+    except Exception as e:
+        print(f"DB Error on login: {e}")
 
     if not user or not is_valid:
         # Fallback for Vercel if bcrypt fails or DB is missing the user
