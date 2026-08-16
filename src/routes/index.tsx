@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react";
-import wordmark from "@/assets/rec-logo.png.asset.json";
 import aiConnection from "@/assets/ai-connection.png.asset.json";
 import { useLogin } from "@/hooks/useApi";
 
@@ -154,8 +153,8 @@ function ConnectionVisual() {
         <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 flex items-center gap-4 p-6">
           <img
-            src={wordmark.url}
-            alt=""
+            src="/new-logo.png"
+            alt="College Logo"
             className="w-56 rounded-lg bg-background/85 p-2 ring-1 ring-border"
           />
           <p className="font-display text-sm font-semibold text-foreground/90">
