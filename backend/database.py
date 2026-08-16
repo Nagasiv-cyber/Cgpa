@@ -164,5 +164,5 @@ async def close_mongo_connection():
 
 def get_database():
     if db_container.client is None:
-        raise Exception("Database client is not initialized.")
+        db_container.client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
     return db_container.client[DB_NAME]
