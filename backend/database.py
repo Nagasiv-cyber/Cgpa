@@ -137,8 +137,8 @@ class MockDatabase:
 
 import certifi
 
-# Try MONGO_URL first, then MONGO_URI, then fallback to localhost
-MONGO_URL = os.getenv("MONGO_URL") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
+# Try MONGO_URL first, then MONGO_URI, then fallback to the actual cluster URL so Vercel works out-of-the-box
+MONGO_URL = os.getenv("MONGO_URL") or os.getenv("MONGO_URI") or "mongodb+srv://visagank2025aiml_db_user:HvaEwu82mhmHTIsI@college-results-cluster.jmywjbu.mongodb.net/aiml_result_db?retryWrites=true&w=majority&appName=college-results-cluster"
 DB_NAME = os.getenv("DB_NAME", "aiml_result_db")
 
 class DatabaseContainer:
