@@ -29,8 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="College Result Management & SGPA/CGPA API",
     description="FastAPI + MongoDB Atlas backend for Department Result Portal",
-    version="1.0.0",
-    lifespan=lifespan
+    version="1.0.0"
 )
 
 # Configure CORS
