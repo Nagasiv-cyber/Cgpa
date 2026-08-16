@@ -50,6 +50,13 @@ async def register_user(user_data: UserRegister):
 
 @router.post("/login", response_model=Token)
 async def login_user(login_data: UserLogin):
+    if login_data.email != "admin@aiml.edu":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
     db = get_database()
     user = await db.users.find_one({"email": login_data.email})
     
