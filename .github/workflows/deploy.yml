@@ -30,7 +30,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build (Node server for static HTML generation)
-        run: bun run vite build --config vite.config.pages.ts
+        # Use node-server preset to allow booting a temporary server to render HTML
+        run: bun run vite build --config vite.config.pages.ts --base=/Cgpa/
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
@@ -45,8 +46,6 @@ jobs:
           cp .output/public/index.html .output/public/404.html
           kill $SERVER_PID
 
-      - name: Copy CNAME for custom domain
-        run: cp CNAME .output/public/CNAME
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
