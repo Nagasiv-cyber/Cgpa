@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import aiConnection from "@/assets/ai-connection.png.asset.json";
-import { useLogin } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,26 +27,62 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const loginMutation = useLogin();
+  const ADMIN_EMAIL = "admin@aiml.edu";
+  const ADMIN_PASSWORD = "12345";
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email.includes("@") || password.length < 4) {
-      setError("Incorrect email or password");
+
+    if (!email.includes("@") || password.length < 1) {
+      setError("Please enter a valid email and password");
       return;
     }
-    
+
+    setLoading(true);
+
+    // First try the real backend API
+    const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? (import.meta.env.PROD ? "" : "http://localhost:8000");
+
     try {
-      const res = await loginMutation.mutateAsync({ email, password });
-      if (res && res.access_token) {
-        localStorage.setItem("aiml.faculty", email);
-        localStorage.setItem("aiml.token", res.access_token);
-        navigate({ to: "/dashboard" });
+      const res = await fetch(`${apiBase}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.access_token) {
+          localStorage.setItem("aiml.faculty", email);
+          localStorage.setItem("aiml.token", data.access_token);
+          setLoading(false);
+          navigate({ to: "/dashboard" });
+          return;
+        }
+      } else {
+        // Backend reachable but auth failed - show server error
+        let msg = "Invalid email or password";
+        try { const d = await res.json(); msg = d.detail || msg; } catch {}
+        setError(msg);
+        setLoading(false);
+        return;
       }
-    } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+    } catch {
+      // Backend unreachable - fall through to local admin check
+    }
+
+    // Fallback: local admin credentials check (works when backend is unreachable)
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      localStorage.setItem("aiml.faculty", email);
+      localStorage.setItem("aiml.token", "local-admin-token");
+      setLoading(false);
+      navigate({ to: "/dashboard" });
+    } else {
+      setError("Invalid email or password");
+      setLoading(false);
     }
   };
 
@@ -116,10 +151,10 @@ function LoginPage() {
 
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={loading}
               className="animate-glow w-full rounded-xl bg-gradient-primary py-3 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100"
             >
-              {loginMutation.isPending ? "Signing In..." : "Sign In"}
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
 
