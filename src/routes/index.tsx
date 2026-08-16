@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import wordmark from "@/assets/rec-logo.png.asset.json";
 import aiConnection from "@/assets/ai-connection.png.asset.json";
+import { useLogin } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,14 +30,26 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const loginMutation = useLogin();
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     if (!email.includes("@") || password.length < 4) {
       setError("Incorrect email or password");
       return;
     }
-    localStorage.setItem("aiml.faculty", email);
-    navigate({ to: "/dashboard" });
+    
+    try {
+      const res = await loginMutation.mutateAsync({ email, password });
+      if (res && res.access_token) {
+        localStorage.setItem("aiml.faculty", email);
+        localStorage.setItem("aiml.token", res.access_token);
+        navigate({ to: "/dashboard" });
+      }
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password");
+    }
   };
 
   return (
@@ -104,9 +117,10 @@ function LoginPage() {
 
             <button
               type="submit"
-              className="animate-glow w-full rounded-xl bg-gradient-primary py-3 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01]"
+              disabled={loginMutation.isPending}
+              className="animate-glow w-full rounded-xl bg-gradient-primary py-3 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100"
             >
-              Sign In
+              {loginMutation.isPending ? "Signing In..." : "Sign In"}
             </button>
           </form>
 

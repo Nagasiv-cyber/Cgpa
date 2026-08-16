@@ -53,7 +53,23 @@ async def login_user(login_data: UserLogin):
     db = get_database()
     user = await db.users.find_one({"email": login_data.email})
     
-    if not user or not verify_password(login_data.password, user["password"]):
+    is_valid = False
+    if user:
+        if "hashed_password" in user:
+            if user["hashed_password"] == login_data.password:
+                is_valid = True
+            else:
+                try:
+                    is_valid = verify_password(login_data.password, user["hashed_password"])
+                except Exception:
+                    pass
+        elif "password" in user:
+            try:
+                is_valid = verify_password(login_data.password, user["password"])
+            except Exception:
+                pass
+
+    if not user or not is_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

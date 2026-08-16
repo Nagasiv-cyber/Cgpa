@@ -188,3 +188,13 @@ export function useDeleteSubject() {
     },
   });
 }
+
+export function useLogin() {
+  return useMutation({
+    mutationFn: (data: any) =>
+      fetcher("/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  });
+}
