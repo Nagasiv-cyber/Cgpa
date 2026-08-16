@@ -8,9 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+import certifi
+
+# Try MONGO_URL first, then MONGO_URI, then fallback to localhost
+MONGO_URL = os.getenv("MONGO_URL") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
 DB_NAME = os.getenv("DB_NAME", "aiml_result_db")
 
 class InsertResult:
@@ -131,24 +135,27 @@ class MockDatabase:
     def __getitem__(self, name: str) -> MockCollection:
         return self.__getattr__(name)
 
+import certifi
+
+# Try MONGO_URL first, then MONGO_URI, then fallback to localhost
+MONGO_URL = os.getenv("MONGO_URL") or os.getenv("MONGO_URI") or "mongodb://localhost:27017"
+DB_NAME = os.getenv("DB_NAME", "aiml_result_db")
+
 class DatabaseContainer:
     client: Optional[AsyncIOMotorClient] = None
 
 db_container = DatabaseContainer()
-_mock_db = MockDatabase()
-_use_mock = False
 
 async def connect_to_mongo():
-    global _use_mock
     try:
-        client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=1000)
+        # Use certifi for TLS CA file to prevent SSL certificate errors on Windows/Vercel
+        client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
         await client.admin.command('ping')
         db_container.client = client
-        _use_mock = False
         print(f"[MongoDB] Connected asynchronously to database: {DB_NAME}")
     except Exception as e:
-        _use_mock = True
-        print(f"[MongoDB] Server unavailable ({e}). Fallback to in-memory database engine.")
+        print(f"[MongoDB] Failed to connect to database at {MONGO_URL.split('@')[-1] if '@' in MONGO_URL else MONGO_URL}. Error: {e}")
+        raise e
 
 async def close_mongo_connection():
     if db_container.client:
@@ -156,6 +163,6 @@ async def close_mongo_connection():
         print("[MongoDB] Connection closed.")
 
 def get_database():
-    if _use_mock or db_container.client is None:
-        return _mock_db
+    if db_container.client is None:
+        raise Exception("Database client is not initialized.")
     return db_container.client[DB_NAME]

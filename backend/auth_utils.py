@@ -9,7 +9,13 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 # pyrefly: ignore [missing-import]
 from fastapi.security import OAuth2PasswordBearer
-from database import get_database
+try:
+    from backend.database import get_database
+except ImportError:
+    try:
+        from database import get_database
+    except ImportError:
+        from .database import get_database
 # pyrefly: ignore [missing-import]
 from bson import ObjectId, errors as bson_errors
 
