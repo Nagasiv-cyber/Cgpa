@@ -29,23 +29,29 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build (SPA / static mode — Nitro/SSR disabled)
+      - name: Build (Node server for static HTML generation)
         run: bun run vite build --config vite.config.pages.ts
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      - name: Create 404.html for SPA deep-link routing
-        # GitHub Pages returns a real 404 for unknown paths.
-        # Copying index.html as 404.html lets TanStack Router handle all routes client-side.
-        run: cp dist/client/index.html dist/client/404.html
+      - name: Generate Static HTML
+        # Boot the built node server and curl the HTML, because Tanstack Start 
+        # requires the SSR handler to emit the initial index.html for SPAs.
+        run: |
+          node .output/server/index.mjs &
+          SERVER_PID=$!
+          npx wait-on http://localhost:3000
+          curl -s http://localhost:3000/ > .output/public/index.html
+          cp .output/public/index.html .output/public/404.html
+          kill $SERVER_PID
 
       - name: Copy CNAME for custom domain
-        run: cp CNAME dist/client/CNAME
+        run: cp CNAME .output/public/CNAME
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/client
+          path: .output/public
 
   deploy:
     needs: build
