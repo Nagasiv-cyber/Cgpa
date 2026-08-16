@@ -49,7 +49,15 @@ function GradeEntry() {
 
   const roster = studentsData || [];
   const subjectsDataRaw = subjectsData || [];
-  const subjects = subjectsDataRaw.filter((s: any) => s.semester === semester || !s.semester);
+  const label = SEMESTER_LABELS[semester] || "";
+  const subjects = subjectsDataRaw.filter((s: any) => {
+    if (!s.semester) return true;
+    const dbSem = String(s.semester).trim().toLowerCase();
+    const stateSem = String(semester).trim().toLowerCase();
+    const labelSem = label.trim().toLowerCase();
+    return dbSem === stateSem || dbSem === labelSem;
+  });
+  console.log("DEBUG: subjectsDataRaw length:", subjectsDataRaw.length, "semester state:", semester, "label:", label, "filtered count:", subjects.length);
   const student = roster.find((s: any) => s.register_no === reg);
   
   // Find existing results for chosen semester

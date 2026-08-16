@@ -40,7 +40,7 @@ export function useStudent(regNo: string) {
 export function useSubjects() {
   return useQuery({
     queryKey: ["subjects"],
-    queryFn: () => fetcher("/subjects"),
+    queryFn: () => fetcher("/subjects/"),
   });
 }
 
