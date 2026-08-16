@@ -6,10 +6,17 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// When PAGES_BUILD=true (GitHub Pages CI), skip Nitro/SSR entirely and emit a
+// pure Vite client bundle that GitHub Pages can serve as a static SPA.
+const isPagesBuild = process.env.PAGES_BUILD === "true";
+
 export default defineConfig({
+  // Disable Nitro for GitHub Pages static builds
+  ...(isPagesBuild ? { nitro: false } : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
   },
 });
+
