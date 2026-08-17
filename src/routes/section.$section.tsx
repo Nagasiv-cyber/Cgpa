@@ -40,6 +40,42 @@ function SectionPage() {
       s.register_no.toLowerCase().includes(q.toLowerCase()),
   );
 
+  const handleExport = () => {
+    if (!rows.length) return;
+
+    const headers = [
+      "S.No",
+      "Reg.No",
+      "Name of Student",
+      ...subjects.map((s: any) => s.code),
+      "Arrears",
+      "GPA",
+      "Rank"
+    ];
+
+    const csvRows = rows.map((s: any, i: number) => {
+      return [
+        i + 1,
+        s.register_no,
+        `"${s.student_name}"`,
+        ...subjects.map((sub: any) => s.grades?.[sub.code] || "-"),
+        s.arrears?.length || 0,
+        s.sgpa?.toFixed(2) || "0.00",
+        s.rank || "-"
+      ].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `section_${current}_grades.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AppShell>
       <PageHeading
@@ -75,7 +111,10 @@ function SectionPage() {
             />
           </label>
 
-          <button className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-cyan/60 hover:text-cyan">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-cyan/60 hover:text-cyan"
+          >
             <Download className="h-4 w-4" /> Export
           </button>
         </div>
