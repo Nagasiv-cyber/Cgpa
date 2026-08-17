@@ -4,7 +4,7 @@ import { Printer, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Panel } from "@/components/portal/ui";
 import { useStudents, useSectionResults, useSubjects } from "@/hooks/useApi";
-import { SEMESTERS } from "@/lib/portal-data";
+import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
 
 type ResultSearch = { section?: string | undefined };
 
