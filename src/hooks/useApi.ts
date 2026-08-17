@@ -98,6 +98,13 @@ export function useSectionResults(section: string) {
   });
 }
 
+export function useAuditLogs(limit: number = 100) {
+  return useQuery({
+    queryKey: ["audit-logs", limit],
+    queryFn: () => fetcher(`/audit?limit=${limit}`),
+  });
+}
+
 // Mutations
 export function useCreateStudent() {
   const queryClient = useQueryClient();

@@ -144,3 +144,15 @@ class StudentResponse(StudentBase):
     sgpa_this_semester: Optional[float] = None
     cgpa_all_semesters: Optional[float] = None
 
+# --- Audit Schemas ---
+class AuditLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    user_id: str
+    email: str
+    role: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    timestamp: str
+

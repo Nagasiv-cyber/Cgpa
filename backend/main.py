@@ -7,14 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 try:
     from backend.database import connect_to_mongo, close_mongo_connection
-    from backend.routers import auth, students, subjects, results, semesters
+    from backend.routers import auth, students, subjects, results, semesters, audit
 except ImportError:
     try:
         from database import connect_to_mongo, close_mongo_connection
-        from routers import auth, students, subjects, results, semesters
+        from routers import auth, students, subjects, results, semesters, audit
     except ImportError:
         from .database import connect_to_mongo, close_mongo_connection
-        from .routers import auth, students, subjects, results, semesters
+        from .routers import auth, students, subjects, results, semesters, audit
 
 
 @asynccontextmanager
@@ -47,12 +47,14 @@ app.include_router(students.router, prefix="/api")
 app.include_router(subjects.router, prefix="/api")
 app.include_router(results.router, prefix="/api")
 app.include_router(semesters.router, prefix="/api")
+app.include_router(audit.router, prefix="/api")
 
 app.include_router(auth.router)
 app.include_router(students.router)
 app.include_router(subjects.router)
 app.include_router(results.router)
 app.include_router(semesters.router)
+app.include_router(audit.router)
 
 @app.get("/", tags=["Health"])
 async def root():

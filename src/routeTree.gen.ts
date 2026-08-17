@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuditLogsRouteImport } from './routes/audit-logs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GradeEntryRouteImport } from './routes/grade-entry'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ManageSubjectsRouteImport } from './routes/manage-subjects'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StudentResultRouteImport } from './routes/student-result'
 import { Route as SubjectAnalysisRouteImport } from './routes/subject-analysis'
 import { Route as SectionSectionRouteImport } from './routes/section.$section'
@@ -21,6 +23,11 @@ import { Route as SectionSectionRouteImport } from './routes/section.$section'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditLogsRoute = AuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -43,6 +50,11 @@ const ManageSubjectsRoute = ManageSubjectsRouteImport.update({
   path: '/manage-subjects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudentResultRoute = StudentResultRouteImport.update({
   id: '/student-result',
   path: '/student-result',
@@ -61,20 +73,24 @@ const SectionSectionRoute = SectionSectionRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRoute
   '/dashboard': typeof DashboardRoute
   '/grade-entry': typeof GradeEntryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/manage-subjects': typeof ManageSubjectsRoute
+  '/signup': typeof SignupRoute
   '/student-result': typeof StudentResultRoute
   '/subject-analysis': typeof SubjectAnalysisRoute
   '/section/$section': typeof SectionSectionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRoute
   '/dashboard': typeof DashboardRoute
   '/grade-entry': typeof GradeEntryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/manage-subjects': typeof ManageSubjectsRoute
+  '/signup': typeof SignupRoute
   '/student-result': typeof StudentResultRoute
   '/subject-analysis': typeof SubjectAnalysisRoute
   '/section/$section': typeof SectionSectionRoute
@@ -82,10 +98,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit-logs': typeof AuditLogsRoute
   '/dashboard': typeof DashboardRoute
   '/grade-entry': typeof GradeEntryRoute
   '/leaderboard': typeof LeaderboardRoute
   '/manage-subjects': typeof ManageSubjectsRoute
+  '/signup': typeof SignupRoute
   '/student-result': typeof StudentResultRoute
   '/subject-analysis': typeof SubjectAnalysisRoute
   '/section/$section': typeof SectionSectionRoute
@@ -94,30 +112,36 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/audit-logs'
     | '/dashboard'
     | '/grade-entry'
     | '/leaderboard'
     | '/manage-subjects'
+    | '/signup'
     | '/student-result'
     | '/subject-analysis'
     | '/section/$section'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/audit-logs'
     | '/dashboard'
     | '/grade-entry'
     | '/leaderboard'
     | '/manage-subjects'
+    | '/signup'
     | '/student-result'
     | '/subject-analysis'
     | '/section/$section'
   id:
     | '__root__'
     | '/'
+    | '/audit-logs'
     | '/dashboard'
     | '/grade-entry'
     | '/leaderboard'
     | '/manage-subjects'
+    | '/signup'
     | '/student-result'
     | '/subject-analysis'
     | '/section/$section'
@@ -125,10 +149,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditLogsRoute: typeof AuditLogsRoute
   DashboardRoute: typeof DashboardRoute
   GradeEntryRoute: typeof GradeEntryRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ManageSubjectsRoute: typeof ManageSubjectsRoute
+  SignupRoute: typeof SignupRoute
   StudentResultRoute: typeof StudentResultRoute
   SubjectAnalysisRoute: typeof SubjectAnalysisRoute
   SectionSectionRoute: typeof SectionSectionRoute
@@ -141,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit-logs': {
+      id: '/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuditLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -171,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageSubjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/student-result': {
       id: '/student-result'
       path: '/student-result'
@@ -197,10 +237,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditLogsRoute: AuditLogsRoute,
   DashboardRoute: DashboardRoute,
   GradeEntryRoute: GradeEntryRoute,
   LeaderboardRoute: LeaderboardRoute,
   ManageSubjectsRoute: ManageSubjectsRoute,
+  SignupRoute: SignupRoute,
   StudentResultRoute: StudentResultRoute,
   SubjectAnalysisRoute: SubjectAnalysisRoute,
   SectionSectionRoute: SectionSectionRoute,
@@ -208,13 +250,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

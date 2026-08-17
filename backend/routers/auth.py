@@ -1,5 +1,7 @@
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, HTTPException, status, Depends, Body
+from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
+import datetime
+from datetime import timezone
 # pyrefly: ignore [missing-import]
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
@@ -49,7 +51,7 @@ async def register_user(user_data: UserRegister):
     )
 
 @router.post("/login", response_model=Token)
-async def login_user(login_data: UserLogin):
+async def login_user(login_data: UserLogin, request: Request):
 
 
     user = None
@@ -101,6 +103,25 @@ async def login_user(login_data: UserLogin):
         name=user["name"],
         role=user.get("role", "faculty")
     )
+    
+    # Audit logging
+    try:
+        current_db = get_database()
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        timestamp = datetime.datetime.now(timezone.utc).isoformat()
+        
+        audit_doc = {
+            "user_id": str(user["_id"]),
+            "email": user["email"],
+            "role": user.get("role", "faculty"),
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "timestamp": timestamp
+        }
+        await current_db.audit_logs.insert_one(audit_doc)
+    except Exception as e:
+        print(f"Failed to log audit event: {e}")
     
     return Token(access_token=access_token, token_type="bearer", user=user_response)
 

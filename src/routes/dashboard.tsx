@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { BarChart3, Crown, Medal, PenLine, Trophy, Loader2, UserPlus, PlusCircle } from "lucide-react";
+import { BarChart3, Crown, Medal, PenLine, Trophy, Loader2, UserPlus, PlusCircle, ShieldAlert } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Donut, Panel, PanelTitle, StatCard } from "@/components/portal/ui";
 import { SECTIONS } from "@/lib/portal-data";
@@ -154,6 +154,7 @@ function Dashboard() {
                   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
                   { to: "/subject-analysis", label: "Subject Analysis", icon: BarChart3 },
                   { to: "/manage-subjects", label: "Manage Subjects", icon: PenLine },
+                  { to: "/audit-logs", label: "Audit Logs", icon: ShieldAlert },
                 ].map(({ to, label, icon: Icon }) => (
                   <Link
                     key={to}
