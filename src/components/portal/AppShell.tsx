@@ -17,7 +17,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [faculty, setFaculty] = useState("Faculty");
-  const [semester, setSemester] = useState(SEMESTERS[0] ?? "");
 
   useEffect(() => {
     const stored = localStorage.getItem("aiml.faculty");
@@ -61,18 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <select
-              value={semester}
-              onChange={(e) => setSemester(e.target.value)}
-              aria-label="Semester"
-              className="rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-foreground"
-            >
-              {SEMESTERS.map((s) => (
-                <option key={s} value={s}>
-                  {SEMESTER_LABELS[s] ?? s}
-                </option>
-              ))}
-            </select>
+
             <span className="hidden text-xs capitalize text-muted-foreground sm:block">{faculty}</span>
             <button
               onClick={() => {
