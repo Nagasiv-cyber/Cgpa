@@ -42,18 +42,12 @@ function ClassResult() {
   }, [studentsData]);
 
   const semesters = useMemo(() => {
-    const sems = new Set<string>();
-    if (subjectsData) {
-      subjectsData.forEach((s: any) => s.semester && sems.add(s.semester));
+    if (!subjectsData || subjectsData.length === 0) {
+      return ["I Semester", "II Semester"];
     }
-    if (sectionResultsData) {
-      sectionResultsData.forEach((r: any) => r.semester && sems.add(r.semester));
-    }
-    if (sems.size === 0) {
-      SEMESTERS.forEach((s) => sems.add(s));
-    }
-    return Array.from(sems).sort();
-  }, [subjectsData, sectionResultsData]);
+    const uniqueSemesters = new Set(subjectsData.map((s: any) => s.semester).filter(Boolean));
+    return Array.from(uniqueSemesters).sort() as string[];
+  }, [subjectsData]);
 
   const semester = selectedSemester || semesters[0] || SEMESTERS[0];
 
@@ -236,7 +230,7 @@ function ClassResult() {
                         {result.sgpa !== null ? result.sgpa.toFixed(2) : "-"}
                       </td>
                       <td className="border border-border/50 print:border-black px-2 py-1 font-bold text-violet print:text-black">
-                        {result.rank && result.rank <= 3 ? ["I", "II", "III"][result.rank - 1] : (result.sgpa !== null ? "" : "-")}
+                        {result.rank ? result.rank : (result.sgpa !== null ? "-" : "-")}
                       </td>
                     </tr>
                   );
