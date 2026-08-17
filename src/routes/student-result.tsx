@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
-import { Printer, Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Panel } from "@/components/portal/ui";
 import { useStudents, useSectionResults, useSubjects, useSemesters } from "@/hooks/useApi";
@@ -116,6 +116,42 @@ function ClassResult() {
     return { totalStudents, allClearCount, subjectStats };
   }, [mergedResults, subjects]);
 
+  const handleExport = () => {
+    if (!mergedResults.length) return;
+
+    const headers = [
+      "S.No",
+      "Reg.No",
+      "Name of Student",
+      ...subjects.map((s: any) => s.code),
+      "Arrears",
+      "GPA",
+      "Rank"
+    ];
+
+    const csvRows = mergedResults.map((result: any, idx: number) => {
+      return [
+        idx + 1,
+        result.register_no,
+        `"${result.student_name}"`,
+        ...subjects.map((sub: any) => result.grades?.[sub.code] || "-"),
+        result.sgpa !== null ? (result.arrears?.length || 0) : "-",
+        result.sgpa !== null ? result.sgpa.toFixed(2) : "-",
+        result.rank ? result.rank : "-"
+      ].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `class_result_section_${selectedSection}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <AppShell>
       <PageHeading title="Class Result" subtitle={`${label || `Semester ${semester}`} - Section ${selectedSection}`} />
@@ -148,10 +184,10 @@ function ClassResult() {
         </select>
 
         <button
-          onClick={() => window.print()}
+          onClick={handleExport}
           className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:border-cyan/60 hover:text-cyan"
         >
-          <Printer className="h-4 w-4" /> Print / Export as PDF
+          <Download className="h-4 w-4" /> Export
         </button>
       </div>
 
