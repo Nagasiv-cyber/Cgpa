@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trophy, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Panel, PanelTitle, SectionPill } from "@/components/portal/ui";

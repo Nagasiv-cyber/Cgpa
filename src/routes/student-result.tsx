@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Printer, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Panel } from "@/components/portal/ui";
