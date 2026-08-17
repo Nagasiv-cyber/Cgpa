@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, LayoutDashboard, LogOut, PenLine, Trophy, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Backdrop } from "./Backdrop";
-import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
+
 import { cn } from "@/lib/utils";
 
 const NAV = [

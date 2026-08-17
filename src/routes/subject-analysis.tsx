@@ -15,7 +15,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Donut, Panel, PanelTitle } from "@/components/portal/ui";
-import { SEMESTER_LABELS } from "@/lib/portal-data";
+
 import { useSubjectAnalysis, useLeaderboard, useSemesters } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/subject-analysis")({

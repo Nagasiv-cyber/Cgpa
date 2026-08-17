@@ -47,7 +47,7 @@ function ClassResult() {
     return Array.from(uniqueSections).sort() as string[];
   }, [studentsData]);
 
-  const label = SEMESTER_LABELS[semester] || "";
+  const label = semestersData?.find((s: any) => s.value === semester)?.label || "";
 
   const subjects = useMemo(() => {
     return (subjectsData || []).filter((s: any) => {
