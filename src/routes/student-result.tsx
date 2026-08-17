@@ -48,20 +48,45 @@ function ClassResult() {
     return (subjectsData || []).filter((s: any) => s.semester === semester);
   }, [subjectsData, semester]);
 
-  const results = useMemo(() => {
-    return (sectionResultsData || []).filter((r: any) => r.semester === semester);
-  }, [sectionResultsData, semester]);
+  const mergedResults = useMemo(() => {
+    const studentsInSec = (studentsData || []).filter((s: any) => s.section === selectedSection);
+    const semResults = (sectionResultsData || []).filter((r: any) => r.semester === semester);
+
+    // Create a map for quick lookup
+    const resultMap = new Map();
+    semResults.forEach((r: any) => resultMap.set(r.register_no, r));
+
+    return studentsInSec.map((student: any) => {
+      const res = resultMap.get(student.register_no);
+      if (res) {
+        return res; // use the existing result which has grades, sgpa, rank, etc.
+      }
+      // Return a placeholder for missing result
+      return {
+        id: student.id,
+        register_no: student.register_no,
+        student_name: student.name,
+        section: student.section,
+        semester: semester,
+        grades: {},
+        sgpa: null, // to distinguish from 0
+        cgpa: null,
+        arrears: [],
+        rank: null
+      };
+    }).sort((a: any, b: any) => a.register_no.localeCompare(b.register_no));
+  }, [studentsData, sectionResultsData, selectedSection, semester]);
 
   // Compute stats
   const stats = useMemo(() => {
-    const totalStudents = results.length;
-    const allClearCount = results.filter((r) => (r.arrears?.length || 0) === 0).length;
+    const totalStudents = mergedResults.length;
+    const allClearCount = mergedResults.filter((r) => r.sgpa !== null && (r.arrears?.length || 0) === 0).length;
 
     const subjectStats = subjects.map((sub) => {
       // Assuming missing grade means not present if the student has other grades, but usually they are all present.
       // Let's check if the grade is "U" or something else.
-      const present = results.filter((r) => r.grades?.[sub.code] !== undefined).length;
-      const failed = results.filter((r) => r.grades?.[sub.code] === "U").length;
+      const present = mergedResults.filter((r) => r.grades?.[sub.code] !== undefined).length;
+      const failed = mergedResults.filter((r) => r.grades?.[sub.code] === "U").length;
       const passed = present - failed;
       const passPct = present > 0 ? (passed / present) * 100 : 0;
       const failPct = present > 0 ? (failed / present) * 100 : 0;
@@ -78,7 +103,7 @@ function ClassResult() {
     });
 
     return { totalStudents, allClearCount, subjectStats };
-  }, [results, subjects]);
+  }, [mergedResults, subjects]);
 
   return (
     <AppShell>
@@ -123,8 +148,8 @@ function ClassResult() {
         <div className="flex justify-center p-12">
           <Loader2 className="h-8 w-8 animate-spin text-cyan" />
         </div>
-      ) : results.length === 0 ? (
-        <div className="p-4 text-muted-foreground">No result data found for this class and semester.</div>
+      ) : mergedResults.length === 0 ? (
+        <div className="p-4 text-muted-foreground">No students found for this section.</div>
       ) : (
         <Panel className="overflow-x-auto p-4 sm:p-6 print:p-0 print:border-none print:shadow-none print:bg-white print:text-black">
           <div className="min-w-max border border-border/70 rounded-md print:border-black">
@@ -173,7 +198,7 @@ function ClassResult() {
                 </tr>
               </thead>
               <tbody>
-                {results.map((result, idx) => {
+                {mergedResults.map((result, idx) => {
                   return (
                     <tr key={result.id} className="odd:bg-secondary/10 even:bg-secondary/30 print:bg-white">
                       <td className="border border-border/50 print:border-black px-2 py-1">{idx + 1}</td>
@@ -191,12 +216,14 @@ function ClassResult() {
                           </td>
                         );
                       })}
-                      <td className="border border-border/50 print:border-black px-2 py-1">{result.arrears?.length || 0}</td>
+                      <td className="border border-border/50 print:border-black px-2 py-1">
+                        {result.sgpa !== null ? (result.arrears?.length || 0) : "-"}
+                      </td>
                       <td className="border border-border/50 print:border-black px-2 py-1 font-bold text-cyan print:text-black">
-                        {result.sgpa.toFixed(2)}
+                        {result.sgpa !== null ? result.sgpa.toFixed(2) : "-"}
                       </td>
                       <td className="border border-border/50 print:border-black px-2 py-1 font-bold text-violet print:text-black">
-                        {result.rank && result.rank <= 3 ? ["I", "II", "III"][result.rank - 1] : ""}
+                        {result.rank && result.rank <= 3 ? ["I", "II", "III"][result.rank - 1] : (result.sgpa !== null ? "" : "-")}
                       </td>
                     </tr>
                   );
