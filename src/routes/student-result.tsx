@@ -27,7 +27,7 @@ export const Route = createFileRoute("/student-result")({
 function ClassResult() {
   const search = Route.useSearch();
   const [selectedSection, setSelectedSection] = useState(search.section || "A");
-  const [semester, setSemester] = useState(SEMESTERS[0]);
+  const [selectedSemester, setSelectedSemester] = useState("");
 
   const { data: studentsData, isLoading: isStudentsLoading } = useStudents();
   const { data: sectionResultsData, isLoading: isResultsLoading } = useSectionResults(selectedSection);
@@ -41,8 +41,21 @@ function ClassResult() {
     return Array.from(uniqueSections).sort() as string[];
   }, [studentsData]);
 
-  // Use useEffect to set default section if empty initially, but since we default to "A" it's ok.
-  // Wait, if "A" doesn't exist, we might want to default to the first available section.
+  const semesters = useMemo(() => {
+    const sems = new Set<string>();
+    if (subjectsData) {
+      subjectsData.forEach((s: any) => s.semester && sems.add(s.semester));
+    }
+    if (sectionResultsData) {
+      sectionResultsData.forEach((r: any) => r.semester && sems.add(r.semester));
+    }
+    if (sems.size === 0) {
+      SEMESTERS.forEach((s) => sems.add(s));
+    }
+    return Array.from(sems).sort();
+  }, [subjectsData, sectionResultsData]);
+
+  const semester = selectedSemester || semesters[0] || SEMESTERS[0];
 
   const subjects = useMemo(() => {
     return (subjectsData || []).filter((s: any) => s.semester === semester);
@@ -125,13 +138,13 @@ function ClassResult() {
 
         <select
           value={semester}
-          onChange={(e) => setSemester(e.target.value)}
+          onChange={(e) => setSelectedSemester(e.target.value)}
           aria-label="Semester"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
         >
-          {SEMESTERS.map((sem) => (
+          {semesters.map((sem) => (
             <option key={sem} value={sem}>
-              Semester {sem}
+              {sem.startsWith("Semester") || sem.endsWith("Semester") ? sem : `Semester ${sem}`}
             </option>
           ))}
         </select>
