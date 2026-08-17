@@ -1,89 +1,59 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, User } from "lucide-react";
 import aiConnection from "@/assets/ai-connection.png.asset.json";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Faculty Sign In | AIML SGPA & CGPA Portal" },
-      {
-        name: "description",
-        content:
-          "Secure faculty sign-in for the AIML department SGPA/CGPA portal — grade entry, toppers and result analytics.",
-      },
-      { property: "og:title", content: "Faculty Sign In | AIML SGPA & CGPA Portal" },
-      {
-        property: "og:description",
-        content: "Faculty-only access to grade entry, SGPA/CGPA calculation and semester analytics.",
-      },
+      { title: "Faculty Sign Up | AIML SGPA & CGPA Portal" },
     ],
   }),
-  component: LoginPage,
+  component: SignupPage,
 });
 
-function LoginPage() {
+function SignupPage() {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_EMAIL = "admin@aiml.edu";
-  const ADMIN_PASSWORD = "12345";
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!email.includes("@") || password.length < 1) {
-      setError("Please enter a valid email and password");
+    if (!name || !email.includes("@") || password.length < 1) {
+      setError("Please fill in all fields with valid information");
       return;
     }
 
     setLoading(true);
 
-    // First try the real backend API
     const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? (import.meta.env.PROD ? "" : "http://localhost:8000");
 
     try {
-      const res = await fetch(`${apiBase}/api/auth/login`, {
+      const res = await fetch(`${apiBase}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password, role: "faculty" }),
       });
 
       if (res.ok) {
-        const data = await res.json();
-        if (data?.access_token) {
-          localStorage.setItem("aiml.faculty", email);
-          localStorage.setItem("aiml.token", data.access_token);
-          setLoading(false);
-          navigate({ to: "/dashboard" });
-          return;
-        }
+        setLoading(false);
+        navigate({ to: "/" });
+        return;
       } else {
-        // Backend reachable but auth failed - show server error
-        let msg = "Invalid email or password";
+        let msg = "Failed to register";
         try { const d = await res.json(); msg = d.detail || msg; } catch {}
         setError(msg);
-        setLoading(false);
-        return;
       }
     } catch {
-      // Backend unreachable - fall through to local admin check
+      setError("Unable to connect to server");
     }
-
-    // Fallback: local admin credentials check (works when backend is unreachable)
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      localStorage.setItem("aiml.faculty", email);
-      localStorage.setItem("aiml.token", "local-admin-token");
-      setLoading(false);
-      navigate({ to: "/dashboard" });
-    } else {
-      setError("Invalid email or password");
-      setLoading(false);
-    }
+    
+    setLoading(false);
   };
 
   return (
@@ -105,12 +75,28 @@ function LoginPage() {
             </div>
           </div>
 
-          <h1 className="mt-8 font-display text-2xl font-bold">Faculty Sign In</h1>
+          <h1 className="mt-8 font-display text-2xl font-bold">Faculty Sign Up</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Access grade entry, SGPA/CGPA and semester analytics.
+            Create an account to access grade entry and analytics.
           </p>
 
           <form onSubmit={submit} className="mt-7 space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-xs uppercase tracking-widest text-muted-foreground">
+                Name
+              </span>
+              <span className="relative block">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full rounded-xl border border-border bg-secondary/60 py-2.5 pl-10 pr-3 text-sm outline-none transition-shadow focus:border-cyan focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent-cyan)_20%,transparent)]"
+                />
+              </span>
+            </label>
+            
             <label className="block">
               <span className="mb-1.5 block text-xs uppercase tracking-widest text-muted-foreground">
                 Email
@@ -121,7 +107,7 @@ function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="faculty@agni.edu"
+                  placeholder="faculty@aiml.edu"
                   className="w-full rounded-xl border border-border bg-secondary/60 py-2.5 pl-10 pr-3 text-sm outline-none transition-shadow focus:border-cyan focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent-cyan)_20%,transparent)]"
                 />
               </span>
@@ -154,17 +140,15 @@ function LoginPage() {
               disabled={loading}
               className="animate-glow w-full rounded-xl bg-gradient-primary py-3 font-display text-sm font-bold text-primary-foreground transition-transform hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
+            
+            <div className="mt-4 text-center">
+              <Link to="/" className="text-sm text-cyan hover:underline">
+                Already have an account? Sign In
+              </Link>
+            </div>
           </form>
-
-          <p className="mt-5 text-center text-xs text-muted-foreground">Faculty access only</p>
-          <div className="mt-2 flex flex-col items-center gap-2 text-xs text-muted-foreground">
-            <Link to="/signup" className="text-cyan hover:underline">
-              Don't have an account? Sign Up
-            </Link>
-            <p>Forgot password? Contact admin</p>
-          </div>
         </div>
       </div>
     </div>
