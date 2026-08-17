@@ -56,11 +56,13 @@ function GradeEntry() {
 
   const roster = studentsData || [];
   const subjectsDataRaw = subjectsData || [];
+  const label = semestersData?.find((s: any) => s.value === semester)?.label || "";
   const subjects = subjectsDataRaw.filter((s: any) => {
     if (!s.semester) return true;
     const dbSem = String(s.semester).trim().toLowerCase();
     const stateSem = String(semester).trim().toLowerCase();
-    return dbSem === stateSem;
+    const labelSem = label.trim().toLowerCase();
+    return dbSem === stateSem || dbSem === labelSem;
   });
   const student = roster.find((s: any) => s.register_no === reg);
   
