@@ -37,6 +37,17 @@ const tooltipStyle = {
   border: "1px solid var(--border)",
   borderRadius: 12,
   fontSize: 12,
+  color: "var(--foreground)",
+};
+
+const tooltipItemStyle = {
+  color: "var(--muted-foreground)",
+};
+
+const tooltipLabelStyle = {
+  color: "var(--foreground)",
+  fontWeight: "bold",
+  marginBottom: "4px",
 };
 
 const GRADES_ORDER = ["O", "A+", "A", "B+", "B", "C", "U"];
@@ -162,7 +173,7 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
             <BarChart data={toppers} layout="vertical" margin={{ left: 20, right: 40 }}>
               <XAxis type="number" domain={[0, 10]} stroke="var(--muted-foreground)" fontSize={11} />
               <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} width={90} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
+              <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} cursor={{ fill: "var(--accent)" }} />
               <Bar dataKey="gpa" radius={[0, 8, 8, 0]}>
                 {toppers.map((_: any, i: number) => (
                   <Cell key={i} fill={podiumColors[i]} />
@@ -207,7 +218,7 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
             <CartesianGrid stroke="var(--border)" vertical={false} />
             <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
             <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
+            <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} cursor={{ fill: "var(--accent)" }} />
             <Bar dataKey="count" fill="var(--danger)" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -225,7 +236,7 @@ function SemesterTab({ analysisData, leaderboardData }: { analysisData: any[]; l
               <CartesianGrid stroke="var(--border)" vertical={false} />
               <XAxis dataKey="code" stroke="var(--muted-foreground)" fontSize={10} />
               <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent)" }} />
+              <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} cursor={{ fill: "var(--accent)" }} />
               <Bar dataKey="pass" stackId="a" fill="var(--success)" />
               <Bar dataKey="fail" stackId="a" fill="var(--danger)" radius={[8, 8, 0, 0]} />
             </BarChart>
@@ -289,7 +300,7 @@ function SubjectTab({ analysisData, code, onSelect, codes }: { analysisData: any
               <CartesianGrid stroke="var(--border)" vertical={false} />
               <XAxis dataKey="grade" stroke="var(--muted-foreground)" fontSize={11} />
               <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
               <Line
                 type="monotone"
                 dataKey="count"
