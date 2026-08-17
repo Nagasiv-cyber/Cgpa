@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { ChevronRight, Loader2, UserPlus } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Panel, PanelTitle } from "@/components/portal/ui";
-import { GRADES, SECTIONS, SEMESTERS, SEMESTER_LABELS, computeGpa, type GradeCode, type Section } from "@/lib/portal-data";
-import { useStudents, useStudentResults, useSubjects, useSubmitGrades } from "@/hooks/useApi";
+import { GRADES, SECTIONS, computeGpa, type GradeCode, type Section } from "@/lib/portal-data";
+import { useStudents, useStudentResults, useSubjects, useSubmitGrades, useSemesters } from "@/hooks/useApi";
 import { AddStudentModal } from "@/components/portal/AddStudentModal";
 
 type GradeSearch = { section?: Section | undefined; reg?: string | undefined };
@@ -36,7 +36,14 @@ function GradeEntry() {
 
   const [section, setSection] = useState<Section | "">(search.section ?? "");
   const [reg, setReg] = useState(search.reg ?? "");
-  const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
+  const { data: semestersData } = useSemesters();
+  const [semester, setSemester] = useState("");
+  
+  useEffect(() => {
+    if (semestersData && semestersData.length > 0 && !semester) {
+      setSemester(semestersData[0].value);
+    }
+  }, [semestersData, semester]);
   const [query, setQuery] = useState("");
   const [grades, setGrades] = useState<Record<string, GradeCode | "">>({});
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -49,15 +56,12 @@ function GradeEntry() {
 
   const roster = studentsData || [];
   const subjectsDataRaw = subjectsData || [];
-  const label = SEMESTER_LABELS[semester] || "";
   const subjects = subjectsDataRaw.filter((s: any) => {
     if (!s.semester) return true;
     const dbSem = String(s.semester).trim().toLowerCase();
     const stateSem = String(semester).trim().toLowerCase();
-    const labelSem = label.trim().toLowerCase();
-    return dbSem === stateSem || dbSem === labelSem;
+    return dbSem === stateSem;
   });
-  console.log("DEBUG: subjectsDataRaw length:", subjectsDataRaw.length, "semester state:", semester, "label:", label, "filtered count:", subjects.length);
   const student = roster.find((s: any) => s.register_no === reg);
   
   // Find existing results for chosen semester
@@ -198,17 +202,17 @@ function GradeEntry() {
               3 · Semester
             </span>
             <div className="flex gap-1 rounded-xl border border-border bg-secondary/50 p-1">
-              {SEMESTERS.map((s) => (
+              {semestersData?.map((s: any) => (
                 <button
-                  key={s}
-                  onClick={() => setSemester(s)}
-                  className={`flex-1 rounded-lg py-1.5 font-display text-sm font-bold ${
-                    s === semester
-                      ? "bg-gradient-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-white/5"
+                  key={s.id}
+                  onClick={() => setSemester(s.value)}
+                  className={`flex-1 rounded-lg py-2.5 text-center text-sm font-semibold transition-all ${
+                    semester === s.value
+                      ? "bg-gradient-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
-                  {SEMESTER_LABELS[s] ?? s}
+                  {s.label}
                 </button>
               ))}
             </div>

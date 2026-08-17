@@ -4,8 +4,7 @@ import { Trash2, Loader2, Plus, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Panel, PanelTitle } from "@/components/portal/ui";
-import { useSubjects, useCreateSubject, useDeleteSubject } from "@/hooks/useApi";
-import { SEMESTERS } from "@/lib/portal-data";
+import { useSubjects, useCreateSubject, useDeleteSubject, useSemesters } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/manage-subjects")({
   head: () => ({
@@ -19,6 +18,7 @@ export const Route = createFileRoute("/manage-subjects")({
 
 function ManageSubjects() {
   const { data: subjects, isLoading } = useSubjects();
+  const { data: semestersData } = useSemesters();
   const createSubject = useCreateSubject();
   const deleteSubject = useDeleteSubject();
 
@@ -126,11 +126,11 @@ function ManageSubjects() {
                   onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                   className="w-full rounded-xl border border-border bg-secondary/60 px-3 py-2 text-sm outline-none focus:border-cyan"
                 >
-                  {SEMESTERS.map(s => (
-                    <option key={s} value={s}>{s}</option>
+                  {semestersData?.map((s: any) => (
+                    <option key={s.id} value={s.value}>
+                      {s.label}
+                    </option>
                   ))}
-                  <option value="I Semester">I Semester</option>
-                  <option value="II Semester">II Semester</option>
                 </select>
               </div>
               <button

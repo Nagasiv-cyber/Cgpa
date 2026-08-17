@@ -44,6 +44,13 @@ export function useSubjects() {
   });
 }
 
+export function useSemesters() {
+  return useQuery({
+    queryKey: ["semesters"],
+    queryFn: () => fetcher("/semesters/"),
+  });
+}
+
 export function useLeaderboard(limit: number = 100, semester?: string) {
   return useQuery({
     queryKey: ["leaderboard", limit, semester],
@@ -172,6 +179,23 @@ export function useCreateSubject() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subjects"] });
+    },
+  });
+}
+
+export function useCreateSemester() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      value: string;
+      label: string;
+    }) =>
+      fetcher("/semesters", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
   });
 }

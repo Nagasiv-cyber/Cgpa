@@ -15,8 +15,8 @@ import {
 import { Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Donut, Panel, PanelTitle } from "@/components/portal/ui";
-import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
-import { useSubjectAnalysis, useLeaderboard } from "@/hooks/useApi";
+import { SEMESTER_LABELS } from "@/lib/portal-data";
+import { useSubjectAnalysis, useLeaderboard, useSemesters } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/subject-analysis")({
   head: () => ({
@@ -43,7 +43,14 @@ const GRADES_ORDER = ["O", "A+", "A", "B+", "B", "C", "U"];
 
 function Analysis() {
   const [tab, setTab] = useState<"semester" | "subject">("semester");
-  const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
+  const { data: semestersData } = useSemesters();
+  const [semester, setSemester] = useState("");
+  
+  useEffect(() => {
+    if (semestersData && semestersData.length > 0 && !semester) {
+      setSemester(semestersData[0].value);
+    }
+  }, [semestersData, semester]);
   const [subjectCode, setSubjectCode] = useState<string | null>(null);
 
   const { data: analysisData, isLoading: isAnalLoading } = useSubjectAnalysis(semester);
@@ -77,8 +84,10 @@ function Analysis() {
           aria-label="Semester"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
         >
-          {SEMESTERS.map((s) => (
-            <option key={s} value={s}>{SEMESTER_LABELS[s] ?? s}</option>
+          {semestersData?.map((s: any) => (
+            <option key={s.id} value={s.value}>
+              {s.label}
+            </option>
           ))}
         </select>
       </div>

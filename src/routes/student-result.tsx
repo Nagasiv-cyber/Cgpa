@@ -3,8 +3,7 @@ import { useState, useMemo } from "react";
 import { Printer, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { Panel } from "@/components/portal/ui";
-import { useStudents, useSectionResults, useSubjects } from "@/hooks/useApi";
-import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
+import { useStudents, useSectionResults, useSubjects, useSemesters } from "@/hooks/useApi";
 
 type ResultSearch = { section?: string | undefined };
 
@@ -27,7 +26,14 @@ export const Route = createFileRoute("/student-result")({
 function ClassResult() {
   const search = Route.useSearch();
   const [selectedSection, setSelectedSection] = useState(search.section || "A");
-  const [semester, setSemester] = useState(SEMESTERS[0] || "1");
+  const { data: semestersData } = useSemesters();
+  const [semester, setSemester] = useState("");
+  
+  useEffect(() => {
+    if (semestersData && semestersData.length > 0 && !semester) {
+      setSemester(semestersData[0].value);
+    }
+  }, [semestersData, semester]);
 
   const { data: studentsData, isLoading: isStudentsLoading } = useStudents();
   const { data: sectionResultsData, isLoading: isResultsLoading } = useSectionResults(selectedSection);
@@ -134,9 +140,9 @@ function ClassResult() {
           aria-label="Semester"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
         >
-          {SEMESTERS.map((sem) => (
-            <option key={sem} value={sem}>
-              {SEMESTER_LABELS[sem] ?? `Semester ${sem}`}
+          {semestersData?.map((sem: any) => (
+            <option key={sem.id} value={sem.value}>
+              {sem.label}
             </option>
           ))}
         </select>

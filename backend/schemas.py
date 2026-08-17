@@ -44,6 +44,15 @@ class SubjectResponse(SubjectBase):
     model_config = ConfigDict(from_attributes=True)
     id: Optional[str] = None
 
+# --- Semester Schemas ---
+class SemesterCreate(BaseModel):
+    value: str = Field(..., description="The value stored in DB (e.g., '1', '6')")
+    label: str = Field(..., description="The human-readable label (e.g., 'I Semester', 'VI Semester')")
+
+class SemesterResponse(SemesterCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+
 # --- Grade & Result Schemas ---
 GradeCode = Literal["O", "A+", "A", "B+", "B", "C", "U"]
 

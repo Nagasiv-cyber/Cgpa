@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { BarChart3, Crown, Medal, PenLine, Trophy, Loader2, UserPlus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { BarChart3, Crown, Medal, PenLine, Trophy, Loader2, UserPlus, PlusCircle } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Donut, Panel, PanelTitle, StatCard } from "@/components/portal/ui";
-import { SECTIONS, SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
-import { useLeaderboard, useStudents } from "@/hooks/useApi";
+import { SECTIONS } from "@/lib/portal-data";
+import { useLeaderboard, useStudents, useSemesters } from "@/hooks/useApi";
 import { AddStudentModal } from "@/components/portal/AddStudentModal";
+import { AddSemesterModal } from "@/components/portal/AddSemesterModal";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -22,10 +23,20 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function Dashboard() {
-  const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
-  const { data: rawLeaderboard, isLoading, error } = useLeaderboard(1000, semester); // fetch all for stats
-  const [showAddStudent, setShowAddStudent] = useState(false);
+  const { data: semestersData, isLoading: isLoadingSemesters } = useSemesters();
+  const [semester, setSemester] = useState("");
   
+  useEffect(() => {
+    if (semestersData && semestersData.length > 0 && !semester) {
+      setSemester(semestersData[0].value);
+    }
+  }, [semestersData, semester]);
+
+  const { data: rawLeaderboard, isLoading: isLoadingBoard, error } = useLeaderboard(1000, semester); 
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showAddSemester, setShowAddSemester] = useState(false);
+  
+  const isLoading = isLoadingSemesters || isLoadingBoard;
   const all = rawLeaderboard || [];
   const cleared = all.filter((s: any) => (s.arrears || []).length === 0);
   const appeared = all.length;
@@ -42,21 +53,24 @@ function Dashboard() {
     toppers: toppers
   };
 
+  const currentLabel = semestersData?.find((s: any) => s.value === semester)?.label ?? "Semester";
+
   return (
     <AppShell>
-      {showAddStudent && (
-        <AddStudentModal onClose={() => setShowAddStudent(false)} />
-      )}
-      <PageHeading title="Semester Command Center" subtitle={SEMESTER_LABELS[semester] ?? "Semester"} />
+      {showAddStudent && <AddStudentModal onClose={() => setShowAddStudent(false)} />}
+      {showAddSemester && <AddSemesterModal onClose={() => setShowAddSemester(false)} />}
+      
+      <PageHeading title="Semester Command Center" subtitle={currentLabel} />
       <div className="mb-4">
         <select
           value={semester}
           onChange={(e) => setSemester(e.target.value)}
           aria-label="Semester"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
+          disabled={isLoadingSemesters}
         >
-          {SEMESTERS.map((s) => (
-            <option key={s} value={s}>{SEMESTER_LABELS[s] ?? s}</option>
+          {semestersData?.map((s: any) => (
+            <option key={s.id} value={s.value}>{s.label}</option>
           ))}
         </select>
       </div>
@@ -120,6 +134,13 @@ function Dashboard() {
             <Panel delay={280}>
               <PanelTitle>Quick Links</PanelTitle>
               <div className="grid gap-2">
+                <button
+                  onClick={() => setShowAddSemester(true)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-cyan/40 bg-cyan/5 px-4 py-3 text-sm font-semibold text-cyan transition-colors hover:border-cyan/70 hover:bg-cyan/10"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add New Semester
+                </button>
                 <button
                   id="dashboard-add-student-btn"
                   onClick={() => setShowAddStudent(true)}

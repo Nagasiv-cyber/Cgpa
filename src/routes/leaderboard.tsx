@@ -3,8 +3,7 @@ import { useState } from "react";
 import { Trophy, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
 import { CountUp, Panel, PanelTitle, SectionPill } from "@/components/portal/ui";
-import { SEMESTERS, SEMESTER_LABELS } from "@/lib/portal-data";
-import { useLeaderboard } from "@/hooks/useApi";
+import { useLeaderboard, useSemesters } from "@/hooks/useApi";
 
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
@@ -26,7 +25,14 @@ const PODIUM = [
 ];
 
 function Leaderboard() {
-  const [semester, setSemester] = useState(SEMESTERS[0] ?? "6");
+  const { data: semestersData } = useSemesters();
+  const [semester, setSemester] = useState("");
+  
+  useEffect(() => {
+    if (semestersData && semestersData.length > 0 && !semester) {
+      setSemester(semestersData[0].value);
+    }
+  }, [semestersData, semester]);
   
   // We use the leaderboard hook instead of hardcoded data
   const { data: rawLeaderboard, isLoading, error } = useLeaderboard(10, semester);
@@ -49,16 +55,18 @@ function Leaderboard() {
       <PageHeading title="Leaderboard" subtitle="Highest SGPA scorers this semester" />
 
       <div className="mb-4">
-        <select
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-          aria-label="Semester"
-          className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
-        >
-          {SEMESTERS.map((s) => (
-            <option key={s} value={s}>{SEMESTER_LABELS[s] ?? s}</option>
-          ))}
-        </select>
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              aria-label="Semester"
+              className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
+            >
+              {semestersData?.map((s: any) => (
+                <option key={s.id} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
       </div>
 
       {isLoading ? (
