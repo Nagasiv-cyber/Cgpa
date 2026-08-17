@@ -27,7 +27,7 @@ export const Route = createFileRoute("/student-result")({
 function ClassResult() {
   const search = Route.useSearch();
   const [selectedSection, setSelectedSection] = useState(search.section || "A");
-  const [selectedSemester, setSelectedSemester] = useState("");
+  const [semester, setSemester] = useState(SEMESTERS[0] || "1");
 
   const { data: studentsData, isLoading: isStudentsLoading } = useStudents();
   const { data: sectionResultsData, isLoading: isResultsLoading } = useSectionResults(selectedSection);
@@ -41,19 +41,17 @@ function ClassResult() {
     return Array.from(uniqueSections).sort() as string[];
   }, [studentsData]);
 
-  const semesters = useMemo(() => {
-    if (!subjectsData || subjectsData.length === 0) {
-      return ["I Semester", "II Semester"];
-    }
-    const uniqueSemesters = new Set(subjectsData.map((s: any) => s.semester).filter(Boolean));
-    return Array.from(uniqueSemesters).sort() as string[];
-  }, [subjectsData]);
-
-  const semester = selectedSemester || semesters[0] || SEMESTERS[0];
+  const label = SEMESTER_LABELS[semester] || "";
 
   const subjects = useMemo(() => {
-    return (subjectsData || []).filter((s: any) => s.semester === semester);
-  }, [subjectsData, semester]);
+    return (subjectsData || []).filter((s: any) => {
+      if (!s.semester) return true;
+      const dbSem = String(s.semester).trim().toLowerCase();
+      const stateSem = String(semester).trim().toLowerCase();
+      const labelSem = label.trim().toLowerCase();
+      return dbSem === stateSem || dbSem === labelSem;
+    });
+  }, [subjectsData, semester, label]);
 
   const mergedResults = useMemo(() => {
     const studentsInSec = (studentsData || []).filter((s: any) => s.section === selectedSection);
@@ -114,7 +112,7 @@ function ClassResult() {
 
   return (
     <AppShell>
-      <PageHeading title="Class Result" subtitle={`Semester ${semester} - Section ${selectedSection}`} />
+      <PageHeading title="Class Result" subtitle={`${label || `Semester ${semester}`} - Section ${selectedSection}`} />
 
       <div className="mb-4 flex flex-wrap items-center gap-3 print:hidden">
         <select
@@ -132,13 +130,13 @@ function ClassResult() {
 
         <select
           value={semester}
-          onChange={(e) => setSelectedSemester(e.target.value)}
+          onChange={(e) => setSemester(e.target.value)}
           aria-label="Semester"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
         >
-          {semesters.map((sem) => (
+          {SEMESTERS.map((sem) => (
             <option key={sem} value={sem}>
-              {sem.startsWith("Semester") || sem.endsWith("Semester") ? sem : `Semester ${sem}`}
+              {SEMESTER_LABELS[sem] ?? `Semester ${sem}`}
             </option>
           ))}
         </select>
