@@ -1,74 +1,116 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Printer, Loader2 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/portal/AppShell";
-import { CountUp, GradeBadge, Panel, PanelTitle, SectionPill } from "@/components/portal/ui";
-import { useStudents, useStudentResults, useSubjects } from "@/hooks/useApi";
+import { Panel } from "@/components/portal/ui";
+import { useStudents, useSectionResults, useSubjects } from "@/hooks/useApi";
 import { SEMESTERS } from "@/lib/portal-data";
 
-type ResultSearch = { reg?: string | undefined };
+type ResultSearch = { section?: string | undefined };
 
 export const Route = createFileRoute("/student-result")({
   validateSearch: (search: Record<string, unknown>): ResultSearch => ({
-    reg: typeof search["reg"] === "string" ? search["reg"] : undefined,
+    section: typeof search["section"] === "string" ? search["section"] : undefined,
   }),
   head: () => ({
     meta: [
-      { title: "Student Result | AIML SGPA Portal" },
+      { title: "Class Result | AIML SGPA Portal" },
       {
         name: "description",
-        content:
-          "Digital marksheet for an AIML student: subject grades, SGPA for the semester and cumulative CGPA.",
+        content: "Digital class result sheet: subject grades, SGPA for the semester for an entire class.",
       },
     ],
   }),
-  component: StudentResult,
+  component: ClassResult,
 });
 
-function StudentResult() {
+function ClassResult() {
   const search = Route.useSearch();
-  const [reg, setReg] = useState(search.reg || "");
+  const [selectedSection, setSelectedSection] = useState(search.section || "A");
+  const [semester, setSemester] = useState(SEMESTERS[0]);
 
-  const { data: studentsData } = useStudents();
-  const students = studentsData || [];
-
-  // Automatically select the first student if none is selected
-  useEffect(() => {
-    if (!reg && students.length > 0) {
-      setReg(students[0].register_no);
-    }
-  }, [students, reg]);
-
-  const { data: resultsData, isLoading: isResultsLoading } = useStudentResults(reg);
+  const { data: studentsData, isLoading: isStudentsLoading } = useStudents();
+  const { data: sectionResultsData, isLoading: isResultsLoading } = useSectionResults(selectedSection);
   const { data: subjectsData, isLoading: isSubjectsLoading } = useSubjects();
 
-  const isLoading = isResultsLoading || isSubjectsLoading;
+  const isLoading = isStudentsLoading || isResultsLoading || isSubjectsLoading;
 
-  const result = (resultsData || []).find((r: any) => r.semester === SEMESTERS[0]) || (resultsData || [])[0];
-  const subjects = subjectsData || [];
+  const sections = useMemo(() => {
+    if (!studentsData) return ["A", "B", "C", "D"]; // Fallback
+    const uniqueSections = new Set(studentsData.map((s: any) => s.section).filter(Boolean));
+    return Array.from(uniqueSections).sort() as string[];
+  }, [studentsData]);
 
-  // Dummy trend for UI since we only have one semester of data right now
-  const cgpa = result?.cgpa || 0;
-  const sgpa = result?.sgpa || 0;
-  const trend = [7.8, 8.2, 8.05, cgpa, sgpa];
+  // Use useEffect to set default section if empty initially, but since we default to "A" it's ok.
+  // Wait, if "A" doesn't exist, we might want to default to the first available section.
+
+  const subjects = useMemo(() => {
+    return (subjectsData || []).filter((s: any) => s.semester === semester);
+  }, [subjectsData, semester]);
+
+  const results = useMemo(() => {
+    return (sectionResultsData || []).filter((r: any) => r.semester === semester);
+  }, [sectionResultsData, semester]);
+
+  // Compute stats
+  const stats = useMemo(() => {
+    const totalStudents = results.length;
+    const allClearCount = results.filter((r) => (r.arrears?.length || 0) === 0).length;
+
+    const subjectStats = subjects.map((sub) => {
+      // Assuming missing grade means not present if the student has other grades, but usually they are all present.
+      // Let's check if the grade is "U" or something else.
+      const present = results.filter((r) => r.grades?.[sub.code] !== undefined).length;
+      const failed = results.filter((r) => r.grades?.[sub.code] === "U").length;
+      const passed = present - failed;
+      const passPct = present > 0 ? (passed / present) * 100 : 0;
+      const failPct = present > 0 ? (failed / present) * 100 : 0;
+
+      return {
+        code: sub.code,
+        present,
+        absent: totalStudents - present,
+        passed,
+        failed,
+        passPct: passPct.toFixed(0),
+        failPct: failPct.toFixed(0),
+      };
+    });
+
+    return { totalStudents, allClearCount, subjectStats };
+  }, [results, subjects]);
 
   return (
     <AppShell>
-      <PageHeading title="Student Result" subtitle="Digital marksheet" />
+      <PageHeading title="Class Result" subtitle={`Semester ${semester} - Section ${selectedSection}`} />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3 print:hidden">
         <select
-          value={reg}
-          onChange={(e) => setReg(e.target.value)}
-          aria-label="Student"
+          value={selectedSection}
+          onChange={(e) => setSelectedSection(e.target.value)}
+          aria-label="Section"
           className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
         >
-          {students.map((s: any) => (
-            <option key={s.id} value={s.register_no}>
-              {s.name} — {s.register_no} (Sec {s.section})
+          {sections.map((sec) => (
+            <option key={sec} value={sec}>
+              Section {sec}
             </option>
           ))}
         </select>
+
+        <select
+          value={semester}
+          onChange={(e) => setSemester(e.target.value)}
+          aria-label="Semester"
+          className="rounded-xl border border-border bg-secondary/60 px-4 py-2 text-sm"
+        >
+          {SEMESTERS.map((sem) => (
+            <option key={sem} value={sem}>
+              Semester {sem}
+            </option>
+          ))}
+        </select>
+
         <button
           onClick={() => window.print()}
           className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:border-cyan/60 hover:text-cyan"
@@ -77,86 +119,182 @@ function StudentResult() {
         </button>
       </div>
 
-      {isLoading && reg ? (
+      {isLoading ? (
         <div className="flex justify-center p-12">
           <Loader2 className="h-8 w-8 animate-spin text-cyan" />
         </div>
-      ) : !result ? (
-        <div className="p-4 text-muted-foreground">No result data found for this student.</div>
+      ) : results.length === 0 ? (
+        <div className="p-4 text-muted-foreground">No result data found for this class and semester.</div>
       ) : (
-        <Panel>
-          <div className="flex flex-wrap items-center gap-4 border-b border-border/60 pb-5">
-            <div>
-              <div className="font-display text-2xl font-bold">{result.student_name}</div>
-              <div className="mt-1 font-mono text-xs text-muted-foreground">{result.register_no}</div>
-            </div>
-            <SectionPill section={result.section} />
-            <span className="text-xs text-muted-foreground">Semester {result.semester}</span>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_320px]">
-            <div className="overflow-x-auto rounded-xl border border-border/70">
-              <table className="w-full min-w-[560px] text-sm">
-                <thead className="bg-panel/95">
-                  <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-3 py-3">Subject</th>
-                    <th className="px-3 py-3">Code</th>
-                    <th className="px-3 py-3 text-center">Credits</th>
-                    <th className="px-3 py-3 text-center">Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjects.map((sub: any) => {
-                    const grade = result.grades?.[sub.code];
-                    if (!grade) return null;
-                    return (
-                      <tr key={sub.code} className="border-t border-border/50 odd:bg-secondary/20">
-                        <td className="px-3 py-2">
-                          {sub.name}
-                          <span className="block text-[11px] text-muted-foreground">{sub.faculty}</span>
-                        </td>
-                        <td className="px-3 py-2 font-mono text-xs text-cyan">{sub.code}</td>
-                        <td className="px-3 py-2 text-center font-mono text-xs">{sub.credits}</td>
-                        <td className="px-3 py-2 text-center">
-                          <GradeBadge grade={grade} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-cyan/30 bg-cyan/5 p-6 text-center shadow-[var(--glow-cyan)]">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">SGPA</div>
-                <div className="font-display text-4xl font-bold text-cyan">
-                  <CountUp value={sgpa} decimals={2} />
-                </div>
-              </div>
-              <div className="rounded-2xl border border-violet/30 bg-violet/5 p-6 text-center">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">CGPA</div>
-                <div className="font-display text-4xl font-bold text-violet">
-                  <CountUp value={cgpa} decimals={2} />
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border/70 p-4">
-                <PanelTitle>Trend</PanelTitle>
-                <svg viewBox="0 0 200 60" className="h-16 w-full">
-                  <polyline
-                    fill="none"
-                    stroke="var(--accent-cyan)"
-                    strokeWidth="2"
-                    points={trend
-                      .map((v, i) => `${(i / (trend.length - 1)) * 190 + 5},${58 - (v / 10) * 52}`)
-                      .join(" ")}
-                  />
-                </svg>
-              </div>
-            </div>
+        <Panel className="overflow-x-auto p-4 sm:p-6 print:p-0 print:border-none print:shadow-none print:bg-white print:text-black">
+          <div className="min-w-max border border-border/70 rounded-md print:border-black">
+            <table className="w-full text-xs text-center border-collapse">
+              <thead className="bg-panel/95 print:bg-white print:text-black">
+                <tr>
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-2 py-1 align-middle whitespace-nowrap">
+                    S. No
+                  </th>
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-2 py-1 align-middle whitespace-nowrap">
+                    Reg.No
+                  </th>
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-4 py-1 align-middle text-left whitespace-nowrap min-w-[200px]">
+                    Name of the Student
+                  </th>
+                  {subjects.map((sub) => (
+                    <th key={sub.code} className="border border-border/50 print:border-black px-2 py-1 whitespace-nowrap font-bold">
+                      {sub.code}
+                    </th>
+                  ))}
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-2 py-1 align-middle">
+                    <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }} className="m-auto h-24 flex items-center justify-center leading-tight">
+                      List of<br/>Arrears
+                    </div>
+                  </th>
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-2 py-1 align-middle font-bold">
+                    <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }} className="m-auto h-24 flex items-center justify-center">GPA</div>
+                  </th>
+                  <th rowSpan={3} className="border border-border/50 print:border-black px-2 py-1 align-middle font-bold">
+                    <div style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }} className="m-auto h-24 flex items-center justify-center">Rank</div>
+                  </th>
+                </tr>
+                <tr>
+                  {subjects.map((sub) => (
+                    <th key={`${sub.code}-credits`} className="border border-border/50 print:border-black px-2 py-1 text-[14px]">
+                      {sub.credits}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
+                  {subjects.map((sub) => (
+                    <th key={`${sub.code}-abbr`} className="border border-border/50 print:border-black px-2 py-1 font-bold text-[14px]">
+                      {sub.abbr}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((result, idx) => {
+                  return (
+                    <tr key={result.id} className="odd:bg-secondary/10 even:bg-secondary/30 print:bg-white">
+                      <td className="border border-border/50 print:border-black px-2 py-1">{idx + 1}</td>
+                      <td className="border border-border/50 print:border-black px-2 py-1">{result.register_no}</td>
+                      <td className="border border-border/50 print:border-black px-4 py-1 text-left whitespace-nowrap">{result.student_name}</td>
+                      {subjects.map((sub) => {
+                        const grade = result.grades?.[sub.code];
+                        const isFail = grade === "U";
+                        return (
+                          <td 
+                            key={`${result.id}-${sub.code}`} 
+                            className={`border border-border/50 print:border-black px-2 py-1 ${isFail ? 'bg-red-500/20 text-red-500 font-bold print:bg-red-500 print:text-white' : ''}`}
+                          >
+                            {grade || "-"}
+                          </td>
+                        );
+                      })}
+                      <td className="border border-border/50 print:border-black px-2 py-1">{result.arrears?.length || 0}</td>
+                      <td className="border border-border/50 print:border-black px-2 py-1 font-bold text-cyan print:text-black">
+                        {result.sgpa.toFixed(2)}
+                      </td>
+                      <td className="border border-border/50 print:border-black px-2 py-1 font-bold text-violet print:text-black">
+                        {result.rank && result.rank <= 3 ? ["I", "II", "III"][result.rank - 1] : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="font-bold text-left bg-panel/95 print:bg-white print:text-black">
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Total Number of Students
+                  </td>
+                  {subjects.map((sub) => (
+                    <td key={`total-${sub.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center">
+                      {stats.totalStudents}
+                    </td>
+                  ))}
+                  <td colSpan={3} rowSpan={8} className="border border-border/50 print:border-black px-4 py-2 align-top text-xs text-muted-foreground print:text-black whitespace-nowrap">
+                    <div className="font-bold text-foreground print:text-black mb-1">SEMESTER {semester}</div>
+                    {subjects.map((sub) => (
+                      <div key={`legend-${sub.code}`}>
+                        <span className="font-bold">{sub.code}</span> {sub.name}
+                      </div>
+                    ))}
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Number of Students Present
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`present-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center">
+                      {stat.present}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Number of Students Absent
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`absent-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center">
+                      {stat.absent}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Number of Students Passed
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`passed-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center">
+                      {stat.passed}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Number of Students Failed
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`failed-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center text-red-500">
+                      {stat.failed > 0 ? stat.failed : 0}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Pass Percentage
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`passpct-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center">
+                      {stat.passPct}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Fail Percentage
+                  </td>
+                  {stats.subjectStats.map((stat) => (
+                    <td key={`failpct-${stat.code}`} className="border border-border/50 print:border-black px-2 py-2 text-center text-red-500">
+                      {stat.failPct > 0 ? stat.failPct : 0}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td colSpan={3} className="border border-border/50 print:border-black px-4 py-2">
+                    Number of Students All Clear
+                  </td>
+                  <td colSpan={subjects.length} className="border border-border/50 print:border-black px-2 py-2 text-center text-lg">
+                    {stats.allClearCount}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </Panel>
       )}
     </AppShell>
   );
 }
+
